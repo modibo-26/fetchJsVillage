@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gestion Clients</title>
+</head>
+<body>
+    <h1>Gestion Clients</h1>
+
+    <!-- Section Login (visible si pas connecté) -->
+    <section id="loginSection">
+        <h2>Connexion</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button id="btnLogin">Login</button>
+        <p id="loginMessage"></p>
+    </section>
+
+    <!-- Section App (visible si connecté) -->
+    <section id="appSection" style="display: none;">
+        <button id="btnLogout">Déconnexion</button>
+        
+        <h2>Liste des clients</h2>
+        <button id="btnLoad">Charger</button>
+        <ul id="clientList"></ul>
+
+        <h2>Ajouter un client</h2>
+        <input type="text" id="nom" placeholder="Nom">
+        <input type="email" id="email" placeholder="Email">
+        <button id="btnAdd">Ajouter</button>
+        <p id="addMessage"></p>
+    </section>
+
+    <script> 
+        // 1. Au chargement : vérifier si token existe
+        //    - Si oui → cacher loginSection, afficher appSection
+        //    - Si non → afficher loginSection, cacher appSection
+        const token = localStorage.getItem('token');
+        const loginSection = document.getElementById('loginSection');
+        const appSection = document.getElementById('appSection');
+        if (token) {
+            loginSection.style.display = 'none';
+            appSection.style.display = 'block';
+        } else {
+            loginSection.style.display = 'block';
+            appSection.style.display = 'none';
+        }
+        // 2. Login : stocker token + basculer vers appSection
+        const btnLogin = document.getElementById('btnLogin');
+        const loginMessage = document.getElementById('loginMessage');
+        btnLogin.addEventListener('click', async () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            try {
+                const response = await fetch('http://localhost:8082/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (!response.ok) {
+                    loginMessage.textContent = "Erreur de connexion";
+                    return;
+                }
+                const token = await response.text();
+                localStorage.setItem('token', token);
+                loginSection.style.display = 'none';
+                appSection.style.display = 'block';
+            } catch (error) {
+                console.error("Erreur lors de la requête:", error);
+                loginMessage.textContent = "Erreur lors de la requête";
+            }
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        });
+        // 3. Logout : supprimer token (localStorage.removeItem) + basculer vers loginSection
+        const btnLogout = document.getElementById('btnLogout');
+        btnLogout.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            loginSection.style.display = 'block';
+            appSection.style.display = 'none';
+        });
+        // 4. Charger clients + Ajouter client
+        const btnLoad = document.getElementById('btnLoad');
+        const clientList = document.getElementById('clientList');
+        btnLoad.addEventListener('click', async () => {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch('http://localhost:8082/client', {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    console.error("Erreur lors du chargement des clients");
+                    return;
+                }
+                const clients = await response.json();
+                clientList.innerHTML = '';
+                clients.forEach(client => {               
+                    const li = document.createElement('li');
+                    li.textContent = `nom : ${client.nom} email : ${client.email}`;
+                    clientList.appendChild(li);
+                });
+            } catch (error) {
+                console.error("Erreur lors de la requête:", error);
+            }
+            dcocument.getElementById('nom').value = '';
+            document.getElementById('email').value = '';
+        });
+        const btnAdd = document.getElementById('btnAdd');
+        const addMessage = document.getElementById('addMessage');
+        btnAdd.addEventListener('click', async () => {
+            const token = localStorage.getItem('token');
+            const nom = document.getElementById('nom').value;
+            const email = document.getElementById('email').value;
+            try {
+                const response = await fetch('http://localhost:8082/client', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ nom, email })
+                });
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        addMessage.textContent = "Accès refusé (ADMIN requis)";
+                    } else {
+                        addMessage.textContent = "Erreur lors de l'ajout du client";
+                    }
+                    return;
+                }
+                const data = await response.json();
+                addMessage.textContent = "Client ajouté avec succès : " + JSON.stringify(data);
+            } catch (error) {
+                console.error("Erreur lors de la requête:", error);
+                addMessage.textContent = "Erreur lors de la requête";
+            }
+        });
+    </script>
+</body>
+</html>
