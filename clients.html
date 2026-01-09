@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clients</title>
+</head>
+<body>
+    <h1>Liste des clients</h1>
+    
+    <button id="btnLoad">Charger les clients</button>
+    
+    <ul id="clientList"></ul>
+
+    <script>
+        // 1. Récupérer le token depuis localStorage
+        const token = localStorage.getItem('token');
+        const btnLoad = document.getElementById('btnLoad');
+        const clientList = document.getElementById('clientList');
+        // 2. Au clic, faire GET /client avec Authorization header
+        btnLoad.addEventListener('click', async () => {
+            try {
+                const response = await fetch('http://localhost:8082/client', {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    console.error("Erreur lors du chargement des clients");
+                    return;
+                }
+                const clients = await response.json();
+                clientList.innerHTML = '';
+                clients.forEach(client => {
+                    const li = document.createElement('li');
+                    li.textContent = `nom : ${client.nom} email : ${client.email}`;
+                    clientList.appendChild(li);
+                });
+            } catch (error) {
+                console.error("Erreur lors de la requête:", error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ajouter Client</title>
+</head>
+<body>
+    <h1>Ajouter un client</h1>
+    
+    <input type="text" id="nom" placeholder="Nom">
+    <input type="email" id="email" placeholder="Email">
+    <button id="btnAdd">Ajouter</button>
+    
+    <p id="message"></p>
+
+    <script>
+        // 1. Récupérer le token depuis localStorage
+        const token = localStorage.getItem('token');
+        const btnAdd = document.getElementById('btnAdd');
+        const message = document.getElementById('message');
+        // 2. Au clic, faire POST /client avec Authorization header et body JSON
+        btnAdd.addEventListener('click', async () => {
+            const nom = document.getElementById('nom').value;
+            const email = document.getElementById('email').value;
+            try {
+                const response = await fetch('http://localhost:8082/client', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ nom, email })
+                });
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        message.textContent = "Accès refusé (ADMIN requis)";
+                    } else {
+                        message.textContent = "Erreur lors de l'ajout du client";
+                    }
+                    return;
+                }
+                const data = await response.json();
+                message.textContent = "Client ajouté avec succès : " + JSON.stringify(data);
+            } catch (error) {
+                console.error("Erreur lors de la requête:", error);
+                message.textContent = "Erreur lors de la requête";
+            }
+        });
+    </script>
+</body>
+</html>

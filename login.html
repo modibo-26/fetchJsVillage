@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+    <h1>Login</h1>
+    
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button id="btnLogin">Login</button>
+    
+    <p id="result"></p>
+
+    <script>
+        // 1. Récupérer le bouton
+        const btnLogin = document.getElementById('btnLogin');
+        // 2. Ajouter un event listener "click"
+        btnLogin.addEventListener('click', async () => {
+            // 3. Récupérer les valeurs des inputs
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            // 4. Faire un fetch POST vers http://localhost:8082/auth/login
+            try {
+                const response = await fetch('http://localhost:8082/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (!response.ok) {
+                    document.getElementById('result').textContent = 'Identifiants incorrects';
+                    return;
+                }
+                const data = await response.text();
+                console.log("Réponse du serveur:", data);
+                localStorage.setItem('token', data);
+                // 5. Afficher le résultat dans #result
+                document.getElementById('result').textContent = ("Connecté : " + JSON.stringify(data));
+            } catch (error) {
+                console.error("Erreur lors de la requête:", error);
+            }
+        });
+    </script>
+</body>
+</html>
